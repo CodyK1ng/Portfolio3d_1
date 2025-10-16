@@ -72,7 +72,7 @@ scene.traverse((object) => {
 
 
 const starGeometry = new THREE.SphereGeometry( 0.25, 24, 24 );
-const starMaterial = new THREE.MeshStandardMaterial( { color: "rgba(113, 240, 240, 0.83)" } );
+const starMaterial = new THREE.MeshStandardMaterial( { color: "rgba(113, 240, 240, 1)" } );
 function addStar( a ) {
   const star = new THREE.Mesh( starGeometry , starMaterial );
 
@@ -90,6 +90,7 @@ Array(400).fill().forEach(() => addStar( 300 ));
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+let objTarget = new THREE.Object3D();
 window.addEventListener( 'click', (event) => {
   mouse.x = (event.clientX/window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY/ window.innerHeight) * 2 + 1;
@@ -104,6 +105,9 @@ window.addEventListener( 'click', (event) => {
     if ((target.userData?.tags?.includes( "clickable" ) || !camera.position.equals(cameraHome)) && !moving) {
       const target = intersects[0].object;
       moveCameraTo(target.position.clone());
+      objTarget = target;
+      scrollCurrentY = target.position.y;
+      scrollTargetY = target.position.y;
 
     }
     
@@ -136,15 +140,13 @@ function moveCameraTo(targetPosition) {
 
 
 let scrollable = false;
-let scrollTargetY = camera.position.y;
-let scrollCurrentY = camera.position.y;
+let scrollTargetY = 0;
+let scrollCurrentY = 0;
 
 
 window.addEventListener( 'wheel', (event) => {
   if (scrollable){
-    for (const obj of scrollableObjects) {
-      obj.position.y += event.deltaY * 0.01;
-    }
+    scrollTargetY += event.deltaY * 0.01;
   }
 });
 
@@ -173,9 +175,9 @@ function animate() {
      
       dummy.lookAt(targetLook);
 
-      camera.quaternion.slerp(dummy.quaternion, 0.001);
+      camera.quaternion.slerp(dummy.quaternion, 0.0001);
     }else {
-      camera.quaternion.slerp(cameraHomeRot, 0.001);
+      camera.quaternion.slerp(cameraHomeRot, 0.0001);
     }
 
     if (camera.position.distanceTo(targetCamPos) <= .01) {
@@ -186,20 +188,16 @@ function animate() {
         camera.position.copy(targetCamPos);
         scrollable = false;
       }
-    }else{
-      console.log(
-      "CAM:", camera.position,
-      "TARGET:", targetCamPos,
-      "distance", camera.position.distanceTo(targetCamPos)
-      );
     }
   }
 
 
   scrollTargetY = THREE.MathUtils.clamp(scrollTargetY, -50, 150);
   scrollCurrentY = THREE.MathUtils.lerp(scrollCurrentY, scrollTargetY, 0.1);
-  /*camera.position.y = scrollCurrentY;*/
-
+  if (scrollable){
+    objTarget.position.y = scrollCurrentY;
+  }
+  
 
   torus.rotation.y += 0.01;
   sphere.rotation.y += 0.01;
