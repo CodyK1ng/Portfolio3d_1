@@ -13,7 +13,14 @@ const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector( '#bg' ),
 });
 
-/* X = Left/Right, Y = Up/Down, Z = Foward/Backward */
+
+/* 
+X = Left/Right
+Y = Up/Down 
+Z = Foward/Backward 
+*/
+
+
 const cameraHome = { x: 0, y: 40, z: 100 };
 camera.position.copy( cameraHome );
 camera.rotation.set( -.1, 0, 0 );
@@ -25,14 +32,20 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.render( scene, camera );
 scene.add(camera);
 
-/*hidden obj*/
+
+
+/*
+Re-center of rotation hidden box
+*/
 const hiddenHomeBox = new THREE.Mesh(
   new THREE.BoxGeometry( 10 , 10 , 10 ),
   new THREE.MeshStandardMaterial({color: "rgba(255, 0, 212, 1)" })
 );
 hiddenHomeBox.position.set( 0, 35 , 0 ); 
 
-
+/*
+controll buttons
+*/
 const box1 = new THREE.Mesh(
   new THREE.BoxGeometry(1 ,1,1),
   new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
@@ -62,6 +75,10 @@ camera.add(box3);
 
 
 
+
+/*
+Button locations boxes
+*/
 const box4 = new THREE.Mesh(
   new THREE.BoxGeometry( 3 , 3 , 3 ),
   new THREE.MeshStandardMaterial({color: "rgba(0, 221, 255, 1)" })
@@ -71,7 +88,9 @@ scene.add(box4);
 
 
 
-
+/*
+Just some random 3d objects
+*/
 const torus = new THREE.Mesh( 
   new THREE.TorusGeometry( 10, 3, 16, 100 ),  
   new THREE.MeshStandardMaterial( {color: "rgba(218, 10, 59, 1)" } )
@@ -90,17 +109,18 @@ scene.add(sphere);
 
 
 
+
+/*
+Lights and stuff
+*/
 const pointLight = new THREE.PointLight(0xffffff, 10)
 pointLight.position.set( 0, 16, 0 )
 const ambientLight = new THREE.AmbientLight(0xffffff)
 scene.add(pointLight, ambientLight)
 
-
 const lightHelper = new THREE.PointLightHelper(pointLight)
-const gridHelper = new THREE.GridHelper(200, 50);
-scene.add(lightHelper, gridHelper)
+scene.add(lightHelper)
 
-/* const controls = new OrbitControls(camera, renderer.domElement); */
 const scrollableObjects = [];
 scene.traverse((object) => {
 
@@ -179,11 +199,12 @@ window.addEventListener( 'click', (event) => {
   if (intersects.length > 0) {
     
     const target = intersects[0].object;
-    
-    if (( target.userData?.tags?.includes ( "clickable" ) || !camera.position.equals(cameraHome)) && !moving) {
+    objTarget = target;
+    if ( target.userData?.tags?.includes ( "clickable" ) && camera.position.equals(cameraHome) && !moving) {
       if ( target.userData?.tags?.includes ( "box" )){
         if ( target === box1 ){
-          console.log( "box1" );
+          console.log( "box1" ); 
+          offtype = 'left';
           moveCameraTo(box4.position);
           objTarget = box4;
         }else if ( target === box2 ){
@@ -192,46 +213,47 @@ window.addEventListener( 'click', (event) => {
           console.log( "box3" );
         }
       }else{
-       const target = intersects[0].object;
-      moveCameraTo( target.position.clone () );
-      objTarget = target;
-      scrollCurrentY = target.position.y;
-      scrollTargetY = target.position.y; 
+        moveCameraTo( target.position.clone() );
+        scrollCurrentY = target.position.y;
+        scrollTargetY = target.position.y; 
+      }
+    }else{
+      if (!camera.position.equals(cameraHome) && !moving) {
+        moveCameraTo(cameraHome.position);
       }
     }
-    
   }else {
     if (!camera.position.equals(cameraHome) && !moving) {
       moveCameraTo(cameraHome.position);
     }
   }
 });
-
-
+let offtype = null;
+let offset = new THREE.Vector3();
 let targetCamPos = new THREE.Vector3();
 let moving = false;
-let newLook = false;
 function moveCameraTo(targetPosition) {
-  scrollable = false;
   if (camera.position.equals(cameraHome)) {
-    const offset = new THREE.Vector3();
     camera.getWorldDirection(offset);
-
-    offset.x += .5;
-    offset.y += .4;
-    offset.z += .4;
-
+    if (offtype === 'left' ){
+      offset.x += -1;
+      offset.z = 0;
+      console.log("left is firing")
+    }
+    console.log("target firing");
     targetCamPos.copy(targetPosition).addScaledVector(offset, -20);
-    newLook = true;
-    moving = true;
+    move();
   }else {
+    console.log("home Firing");
     objTarget = hiddenHomeBox;
     targetCamPos.set(cameraHome.x, cameraHome.y, cameraHome.z);
-    newLook = false;
-    moving = true;
+    move();
   }
 }
 
+function move(){
+  moving =  true;
+};
 
 let scrollable = false;
 let scrollTargetY = 0;
