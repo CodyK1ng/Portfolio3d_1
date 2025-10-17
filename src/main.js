@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { textureLoad } from 'three/tsl';
+import * as func from './functions.js';
 
 
 const scene = new THREE.Scene();
@@ -203,12 +204,9 @@ window.addEventListener( 'click', (event) => {
     if ( target.userData?.tags?.includes ( "clickable" ) && camera.position.equals(cameraHome) && !moving) {
       if ( target.userData?.tags?.includes ( "box" )){
         if ( target === box1 ){
-          console.log( "box1" ); 
-          offtype = 'left';
-          moveCameraTo(box4.position);
-          objTarget = box4;
+          moveSet(box4, 'left');
         }else if ( target === box2 ){
-          console.log( "box2" );
+          moveSet(box4, 'right');
         }else if ( target === box3 ){
           console.log( "box3" );
         }
@@ -228,20 +226,18 @@ window.addEventListener( 'click', (event) => {
     }
   }
 });
+
+
 let offtype = null;
 let offset = new THREE.Vector3();
 let targetCamPos = new THREE.Vector3();
 let moving = false;
-function moveCameraTo(targetPosition) {
+function moveCameraTo(target) {
   if (camera.position.equals(cameraHome)) {
     camera.getWorldDirection(offset);
-    if (offtype === 'left' ){
-      offset.x += -1;
-      offset.z = 0;
-      console.log("left is firing")
-    }
+    offset = func.CameraDirOff( offtype , offset )
     console.log("target firing");
-    targetCamPos.copy(targetPosition).addScaledVector(offset, -20);
+    targetCamPos.copy(target.position).addScaledVector(offset, -20);
     move();
   }else {
     console.log("home Firing");
@@ -251,15 +247,23 @@ function moveCameraTo(targetPosition) {
   }
 }
 
+/*These make me feel safe. I'm never getting rid of them fuck you :)*/
+function moveSet(target, dir = "jupiter") {
+  offtype = dir;
+  moveCameraTo(target);
+  objTarget = target;
+}
 function move(){
   moving =  true;
 };
 
+
+
+
+
 let scrollable = false;
 let scrollTargetY = 0;
 let scrollCurrentY = 0;
-
-
 window.addEventListener( 'wheel', (event) => {
   if (scrollable){
     scrollTargetY += event.deltaY * 0.01;
