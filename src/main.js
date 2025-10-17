@@ -23,21 +23,54 @@ const cameraHomeRot = new THREE.Quaternion().copy(camera.quaternion);
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.render( scene, camera );
+scene.add(camera);
+
 
 const box1 = new THREE.Mesh(
   new THREE.BoxGeometry(1 ,1,1),
   new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
 );
-box1.position.set(0, -5,-10); 
+box1.position.set(-5, -5,-10); 
+box1.rotation.set(5,0,0);
+box1.userData.tags = ["clickable", "box"];
 camera.add(box1);
-scene.add(camera);
+
+const box2 = new THREE.Mesh(
+  new THREE.BoxGeometry(1 ,1,1),
+  new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
+);
+box2.position.set(0, -5,-10); 
+box2.rotation.set(5,0,0);
+box2.userData.tags = ["clickable", "box"];
+camera.add(box2);
+
+const box3 = new THREE.Mesh(
+  new THREE.BoxGeometry(1 ,1,1),
+  new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
+);
+box3.position.set(5, -5,-10); 
+box3.rotation.set(5,0,0);
+box3.userData.tags = [ "clickable" , "box" ];
+camera.add(box3);
+
+
+
+const box4 = new THREE.Mesh(
+  new THREE.BoxGeometry( 3 , 3 , 3 ),
+  new THREE.MeshStandardMaterial({color: "rgba(0, 221, 255, 1)" })
+);
+box4.position.set(-50, 30, 0);
+scene.add(box4);
+
+
+
 
 const torus = new THREE.Mesh( 
   new THREE.TorusGeometry( 10, 3, 16, 100 ),  
   new THREE.MeshStandardMaterial( {color: "rgba(218, 10, 59, 1)" } )
 );
 torus.position.y += 15;
-torus.userData.tags = [ "clickable", "Scroll" ];
+torus.userData.tags = [ "clickable", "scroll" ];
 scene.add(torus)
 
 const sphere = new THREE.Mesh(
@@ -45,7 +78,7 @@ const sphere = new THREE.Mesh(
   new THREE.MeshStandardMaterial( {color: "rgb(41, 191, 36)" } )
 );
 sphere.position.set( 40, 40, 0 );
-sphere.userData.tags = [ "clickable", "Scroll" ];
+sphere.userData.tags = [ "clickable", "scroll" ];
 scene.add(sphere);
 
 
@@ -64,7 +97,7 @@ scene.add(lightHelper, gridHelper)
 const scrollableObjects = [];
 scene.traverse((object) => {
 
-  if (object.userData?.tags?.includes("Scroll")) {
+  if (object.userData?.tags?.includes("scroll")) {
     scrollableObjects.push(object);
   }
 });
@@ -135,19 +168,28 @@ window.addEventListener( 'click', (event) => {
   mouse.y = -(event.clientY/ window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse,camera);
   const intersects = raycaster.intersectObjects(scene.children);
-  console.log("clicked")
   
   if (intersects.length > 0) {
     
     const target = intersects[0].object;
     
-    if ((target.userData?.tags?.includes( "clickable" ) || !camera.position.equals(cameraHome)) && !moving) {
-      const target = intersects[0].object;
-      moveCameraTo(target.position.clone());
+    if (( target.userData?.tags?.includes ( "clickable" ) || !camera.position.equals(cameraHome)) && !moving) {
+      if ( target.userData?.tags?.includes ( "box" )){
+        if ( target === box1 ){
+          console.log( "box1" );
+          moveCameraTo(box4.position)
+        }else if ( target === box2 ){
+          console.log( "box2" );
+        }else if ( target === box3 ){
+          console.log( "box3" );
+        }
+      }else{
+       const target = intersects[0].object;
+      moveCameraTo( target.position.clone () );
       objTarget = target;
       scrollCurrentY = target.position.y;
-      scrollTargetY = target.position.y;
-
+      scrollTargetY = target.position.y; 
+      }
     }
     
   }else {
@@ -155,7 +197,6 @@ window.addEventListener( 'click', (event) => {
       moveCameraTo(cameraHome.position);
     }
   }
-  
 });
 
 
@@ -167,6 +208,11 @@ function moveCameraTo(targetPosition) {
   if (camera.position.equals(cameraHome)) {
     const offset = new THREE.Vector3();
     camera.getWorldDirection(offset);
+
+    offset.x += 0;
+    offset.y += 0;
+    offset.z += .4;
+
     targetCamPos.copy(targetPosition).addScaledVector(offset, -20);
     newLook = true;
     moving = true;
@@ -192,12 +238,6 @@ window.addEventListener( 'wheel', (event) => {
 
 
 
-
-
-
-
-
-
 function animate() {
   requestAnimationFrame( animate );
 
@@ -207,7 +247,7 @@ function animate() {
       const targetLook = new THREE.Vector3(
         targetCamPos.x ,
         targetCamPos.y ,
-        targetCamPos.z + 10
+        targetCamPos.z 
       );
       const dummy = new THREE.Object3D();
       dummy.position.copy(targetCamPos);
