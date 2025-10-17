@@ -25,6 +25,13 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.render( scene, camera );
 scene.add(camera);
 
+/*hidden obj*/
+const hiddenHomeBox = new THREE.Mesh(
+  new THREE.BoxGeometry( 10 , 10 , 10 ),
+  new THREE.MeshStandardMaterial({color: "rgba(255, 0, 212, 1)" })
+);
+hiddenHomeBox.position.set( 0, 35 , 0 ); 
+
 
 const box1 = new THREE.Mesh(
   new THREE.BoxGeometry(1 ,1,1),
@@ -177,7 +184,8 @@ window.addEventListener( 'click', (event) => {
       if ( target.userData?.tags?.includes ( "box" )){
         if ( target === box1 ){
           console.log( "box1" );
-          moveCameraTo(box4.position)
+          moveCameraTo(box4.position);
+          objTarget = box4;
         }else if ( target === box2 ){
           console.log( "box2" );
         }else if ( target === box3 ){
@@ -209,14 +217,15 @@ function moveCameraTo(targetPosition) {
     const offset = new THREE.Vector3();
     camera.getWorldDirection(offset);
 
-    offset.x += 0;
-    offset.y += 0;
+    offset.x += .5;
+    offset.y += .4;
     offset.z += .4;
 
     targetCamPos.copy(targetPosition).addScaledVector(offset, -20);
     newLook = true;
     moving = true;
   }else {
+    objTarget = hiddenHomeBox;
     targetCamPos.set(cameraHome.x, cameraHome.y, cameraHome.z);
     newLook = false;
     moving = true;
@@ -243,28 +252,23 @@ function animate() {
 
   if(moving) {
     camera.position.lerp(targetCamPos, 0.02);
-    if (newLook){
-      const targetLook = new THREE.Vector3(
-        targetCamPos.x ,
-        targetCamPos.y ,
-        targetCamPos.z 
-      );
-      const dummy = new THREE.Object3D();
-      dummy.position.copy(targetCamPos);
-     
-      dummy.lookAt(targetLook);
 
-      camera.quaternion.slerp(dummy.quaternion, 0.0001);
-    }else {
-      camera.quaternion.slerp(cameraHomeRot, 0.0001);
-    }
+
+    const dummy = new THREE.Object3D();
+    dummy.position.copy(camera.position);
+    dummy.lookAt(objTarget.position);
+    dummy.rotateY(Math.PI);
+
+    camera.quaternion.slerp(dummy.quaternion, 0.02);
+    /*(camera.lookAt(objTarget.position);*/
 
     if (camera.position.distanceTo(targetCamPos) <= .01) {
       moving = false;
       console.log("done moving")
-      scrollable = true;
-      if (!newLook){
-        camera.position.copy(targetCamPos);
+      if ( objTarget.userData?.tags?.includes("scroll")){
+        scrollable = true;
+      }else{
+        camera.position.copy(targetCamPos)
         scrollable = false;
       }
     }
