@@ -13,7 +13,7 @@ const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector( '#bg' ),
 });
 
-
+/* X = Left/Right, Y = Up/Down, Z = Foward/Backward */
 const cameraHome = { x: 0, y: 40, z: 100 };
 camera.position.copy( cameraHome );
 camera.rotation.set( -.1, 0, 0 );
@@ -24,17 +24,26 @@ renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.render( scene, camera );
 
-const torGeometry = new THREE.TorusGeometry( 10, 3, 16, 100 )
-torGeometry.center();
-const torMaterial = new THREE.MeshStandardMaterial( {color: "rgba(218, 10, 59, 1)" } );
-const torus = new THREE.Mesh( torGeometry, torMaterial );
+const box1 = new THREE.Mesh(
+  new THREE.BoxGeometry(1 ,1,1),
+  new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
+);
+box1.position.set(0, -5,-10); 
+camera.add(box1);
+scene.add(camera);
+
+const torus = new THREE.Mesh( 
+  new THREE.TorusGeometry( 10, 3, 16, 100 ),  
+  new THREE.MeshStandardMaterial( {color: "rgba(218, 10, 59, 1)" } )
+);
 torus.position.y += 15;
 torus.userData.tags = [ "clickable", "Scroll" ];
 scene.add(torus)
 
-const sphGeometry = new THREE.SphereGeometry( 4, 40 )
-const sphMaterial = new THREE.MeshStandardMaterial( {color: "rgb(41, 191, 36)" } )
-const sphere = new THREE.Mesh(sphGeometry, sphMaterial);
+const sphere = new THREE.Mesh(
+  new THREE.SphereGeometry( 4, 40 ), 
+  new THREE.MeshStandardMaterial( {color: "rgb(41, 191, 36)" } )
+);
 sphere.position.set( 40, 40, 0 );
 sphere.userData.tags = [ "clickable", "Scroll" ];
 scene.add(sphere);
@@ -90,6 +99,36 @@ Array(400).fill().forEach(() => addStar( 300 ));
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+let hovered = null;
+window.addEventListener('mousemove', (event) => {
+  mouse.x = (event.clientX/window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY/ window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse,camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  if (intersects.length > 0) {
+    const target = intersects[0].object;
+
+    if (target.userData?.tags?.includes( "clickable" )) {
+      if (hovered !== target) {
+        if (hovered !== null){
+          hovered.material.emissive.set(0x000000);
+        }
+        hovered = target;
+        hovered.material.emissive.set(0x999999);
+      }
+    }else if (hovered !== null){
+      hovered.material.emissive.set(0x000000);
+      hovered = null;
+    }
+  }else{
+    if (hovered !== null){
+      hovered.material.emissive.set(0x000000);
+      hovered = null;
+    }
+  }
+});
+
 let objTarget = new THREE.Object3D();
 window.addEventListener( 'click', (event) => {
   mouse.x = (event.clientX/window.innerWidth) * 2 - 1;
