@@ -21,9 +21,11 @@ Y = Up/Down
 Z = Foward/Backward 
 */
 
+camera.position.set( 0, 40 , 100 );
+const cameraHome = new THREE.Object3D();
 
-const cameraHome = { x: 0, y: 40, z: 100 };
-camera.position.copy( cameraHome );
+cameraHome.position.copy( camera.position );
+cameraHome.rotation.copy( camera.rotation );
 camera.rotation.set( -.1, 0, 0 );
 const cameraHomeRot = new THREE.Quaternion().copy(camera.quaternion);
 
@@ -114,12 +116,16 @@ scene.add(sphere);
 /*
 Lights and stuff
 */
-const pointLight = new THREE.PointLight(0xffffff, 10)
-pointLight.position.set( 0, 16, 0 )
-const ambientLight = new THREE.AmbientLight(0xffffff)
-scene.add(pointLight, ambientLight)
+const pointLight = new THREE.PointLight(0xffffff, 10);
+pointLight.position.set( 0, 16, 0 );
+const directionalLight = new THREE.DirectionalLight(0xffffff);
+directionalLight.position.set( 0 , 60 , 0);
+directionalLight.target.position.copy( sphere.position );
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
 
-const lightHelper = new THREE.PointLightHelper(pointLight)
+
+const lightHelper = new THREE.DirectionalLightHelper(directionalLight)
+scene.add(pointLight, directionalLight, ambientLight);
 scene.add(lightHelper)
 
 const scrollableObjects = [];
@@ -152,10 +158,6 @@ function addStar( a ) {
   scene.add(star);
 }
 Array(400).fill().forEach(() => addStar( 300 ));
-
-
-
-
 
 
 const raycaster = new THREE.Raycaster();
@@ -200,8 +202,8 @@ window.addEventListener( 'click', (event) => {
   if (intersects.length > 0) {
     
     const target = intersects[0].object;
-    objTarget = target;
-    if ( target.userData?.tags?.includes ( "clickable" ) && camera.position.equals(cameraHome) && !moving) {
+
+    if ( target.userData?.tags?.includes ( "clickable" ) && camera.position.equals(cameraHome.position) && !moving) {
       if ( target.userData?.tags?.includes ( "box" )){
         if ( target === box1 ){
           moveSet(box4, 'left');
@@ -211,47 +213,50 @@ window.addEventListener( 'click', (event) => {
           console.log( "box3" );
         }
       }else{
-        moveCameraTo( target.position.clone() );
+        moveSet(target);
         scrollCurrentY = target.position.y;
         scrollTargetY = target.position.y; 
       }
     }else{
-      if (!camera.position.equals(cameraHome) && !moving) {
-        moveCameraTo(cameraHome.position);
+      if (!camera.position.equals(cameraHome.position) && !moving) {
+        moveSet(cameraHome);
       }
     }
   }else {
-    if (!camera.position.equals(cameraHome) && !moving) {
-      moveCameraTo(cameraHome.position);
+    if (!camera.position.equals(cameraHome.position) && !moving) {
+      moveSet(cameraHome);
     }
   }
 });
 
 
-let offtype = null;
+let offtype = 'jupiter';
 let offset = new THREE.Vector3();
 let targetCamPos = new THREE.Vector3();
 let moving = false;
 function moveCameraTo(target) {
-  if (camera.position.equals(cameraHome)) {
+  if (camera.position.equals(cameraHome.position)) {
     camera.getWorldDirection(offset);
     offset = func.CameraDirOff( offtype , offset )
-    console.log("target firing");
     targetCamPos.copy(target.position).addScaledVector(offset, -20);
     move();
   }else {
-    console.log("home Firing");
-    objTarget = hiddenHomeBox;
-    targetCamPos.set(cameraHome.x, cameraHome.y, cameraHome.z);
+    targetCamPos.set(cameraHome.position.x, cameraHome.position.y, cameraHome.position.z);
     move();
   }
 }
 
 /*These make me feel safe. I'm never getting rid of them fuck you :)*/
+let camP = null;
 function moveSet(target, dir = "jupiter") {
+  if (camera.position.equals(cameraHome.position)){
+    camP = true;
+  }else{
+    camP = false;
+  }
+  objTarget = target;
   offtype = dir;
   moveCameraTo(target);
-  objTarget = target;
 }
 function move(){
   moving =  true;
@@ -278,11 +283,13 @@ function animate() {
 
   if(moving) {
     camera.position.lerp(targetCamPos, 0.02);
-
-
     const dummy = new THREE.Object3D();
     dummy.position.copy(camera.position);
-    dummy.lookAt(objTarget.position);
+    if (camP){
+      dummy.lookAt(objTarget.position);
+    }else{
+      dummy.lookAt(hiddenHomeBox.position);
+    }
     dummy.rotateY(Math.PI);
 
     camera.quaternion.slerp(dummy.quaternion, 0.02);
@@ -290,7 +297,6 @@ function animate() {
 
     if (camera.position.distanceTo(targetCamPos) <= .01) {
       moving = false;
-      console.log("done moving")
       if ( objTarget.userData?.tags?.includes("scroll")){
         scrollable = true;
       }else{
