@@ -4,6 +4,7 @@ import { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { textureLoad } from 'three/tsl';
 import * as func from './functions.js';
+import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
 
 const scene = new THREE.Scene();
@@ -13,6 +14,62 @@ const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.inner
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector( '#bg' ),
 });
+
+
+let b_1, rSmall_1, rBig_1; 
+
+const modelsToLoad = {
+  button_1: '/Meshes/Button_middle.glb',
+  bRingSmall_1: '/Meshes/Button_sides_1.glb',
+  bRingBig_1: '/Meshes/Button_sides_2.glb',
+}
+const loader = new GLTFLoader();
+const loadedModels = {};
+for (const key in modelsToLoad) {
+  const path = modelsToLoad[key];
+  loader.load(
+    path,
+    (gltf) => {
+      loadedModels[key] = gltf.scene;
+      loadedModels[key].rotation.set(5,0,0);
+      loadedModels[key].scale.set(1,1,1);
+      loadedModels[key].position.set(-5, -5,-10);
+      if (key.includes("button")) {
+        b_1 = gltf.scene;
+        loadedModels[key].userData.tags = ["clickable"];
+        camera.add(loadedModels[key]);
+        b_1.traverse((child) =>{
+          if (child.isMesh) {
+            child.userData.tags = ["clickable"];
+          }
+        });
+      }
+      if (key.includes("RingSmall")) {
+        rSmall_1 = gltf.scene;
+        camera.add(rSmall_1);
+      };
+      if (key.includes("RingBig")) {
+        rBig_1 = gltf.scene;
+        camera.add(rBig_1);
+    
+      };
+
+      // if (key === "button1") button1 = gltf.scene;
+      // if (key === "button1") button1 = gltf.scene;
+      // if (key === "button1") button1 = gltf.scene;
+      // if (key === "button1") button1 = gltf.scene;
+    }
+  ); 
+  
+};
+function childClickable(thing){
+  thing.traverse((child) =>{
+    if (child.isMesh) {
+      thing.userData.tags = ["clickable"];
+    };
+  });
+};
+
 
 
 /* 
@@ -45,6 +102,8 @@ const hiddenHomeBox = new THREE.Mesh(
   new THREE.MeshStandardMaterial({color: "rgba(255, 0, 212, 1)" })
 );
 hiddenHomeBox.position.set( 0, 35 , 0 ); 
+
+
 
 /*
 controll buttons
@@ -312,8 +371,12 @@ function animate() {
   if (scrollable){
     objTarget.position.y = scrollCurrentY;
   }
-  
-
+  if (rSmall_1?.rotation && rBig_1?.rotation){
+    rSmall_1.rotation.y += 0.02;
+    rSmall_1.rotation.x += 0.01;
+    rBig_1.rotation.y -= 0.02;
+    rBig_1.rotation.x -= 0.01;
+  };
   torus.rotation.y += 0.01;
   sphere.rotation.y += 0.01;
 
