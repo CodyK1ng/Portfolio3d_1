@@ -16,8 +16,8 @@ const renderer = new THREE.WebGLRenderer({
 });
 
 
-let b_1, rSmall_1, rBig_1; 
-
+let button_b1, rSmall_b1, rBig_b1; 
+let bRingsRot = 'spin';
 const modelsToLoad = {
   button_1: '/Meshes/Button_middle.glb',
   bRingSmall_1: '/Meshes/Button_sides_1.glb',
@@ -25,32 +25,30 @@ const modelsToLoad = {
 }
 const loader = new GLTFLoader();
 const loadedModels = {};
-for (const key in modelsToLoad) {
-  const path = modelsToLoad[key];
-  loader.load(
-    path,
-    (gltf) => {
+
+const loadModel = (key, path) => {
+  return new Promise ((resolve) => {
+    loader.load( path, (gltf) => {
       loadedModels[key] = gltf.scene;
-      loadedModels[key].rotation.set(5,0,0);
+      loadedModels[key].rotation.set(-5,0,0);
       loadedModels[key].scale.set(1,1,1);
-      loadedModels[key].position.set(-5, -5,-10);
       if (key.includes("button")) {
-        b_1 = gltf.scene;
-        loadedModels[key].userData.tags = ["clickable"];
+        loadedModels[key].position.set(-5, -5,-10);
+        button_b1 = gltf.scene;
         camera.add(loadedModels[key]);
-        b_1.traverse((child) =>{
+        button_b1.traverse((child) =>{
           if (child.isMesh) {
-            child.userData.tags = ["clickable"];
+            child.userData.tags =  [ "clickable" , "button" , key];
           }
         });
       }
       if (key.includes("RingSmall")) {
-        rSmall_1 = gltf.scene;
-        camera.add(rSmall_1);
+        rSmall_b1 = gltf.scene;
+        button_b1.add(rSmall_b1);
       };
       if (key.includes("RingBig")) {
-        rBig_1 = gltf.scene;
-        camera.add(rBig_1);
+        rBig_b1 = gltf.scene;
+        button_b1.add(rBig_b1);
     
       };
 
@@ -58,18 +56,17 @@ for (const key in modelsToLoad) {
       // if (key === "button1") button1 = gltf.scene;
       // if (key === "button1") button1 = gltf.scene;
       // if (key === "button1") button1 = gltf.scene;
-    }
-  ); 
-  
-};
-function childClickable(thing){
-  thing.traverse((child) =>{
-    if (child.isMesh) {
-      thing.userData.tags = ["clickable"];
-    };
+      resolve(gltf.scene);
+    }); 
+
   });
 };
-
+const clickableOjects = [];
+Promise.all(Object.entries(modelsToLoad).map(([key, path]) => loadModel(key, path))).then(() => {
+  scene.traverse((child=>{
+    if (child.userData?.tags?.includes("clickable")) clickableOjects.push(child);
+  }))
+})
 
 
 /* 
@@ -77,6 +74,7 @@ X = Left/Right
 Y = Up/Down 
 Z = Foward/Backward 
 */
+
 
 camera.position.set( 0, 40 , 100 );
 const cameraHome = new THREE.Object3D();
@@ -108,14 +106,14 @@ hiddenHomeBox.position.set( 0, 35 , 0 );
 /*
 controll buttons
 */
-const box1 = new THREE.Mesh(
-  new THREE.BoxGeometry(1 ,1,1),
-  new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
-);
-box1.position.set(-5, -5,-10); 
-box1.rotation.set(5,0,0);
-box1.userData.tags = ["clickable", "box"];
-camera.add(box1);
+// const box1 = new THREE.Mesh(
+//   new THREE.BoxGeometry(1 ,1,1),
+//   new THREE.MeshStandardMaterial({color: "rgba(249, 242, 244, 1)" })
+// );
+// box1.position.set(-5, -5,-10); 
+// box1.rotation.set(5,0,0);
+// box1.userData.tags = ["clickable", "box"];
+// camera.add(box1);
 
 const box2 = new THREE.Mesh(
   new THREE.BoxGeometry(1 ,1,1),
@@ -204,8 +202,6 @@ scene.traverse((object) => {
 
 
 
-
-
 const starGeometry = new THREE.SphereGeometry( 0.25, 24, 24 );
 const starMaterial = new THREE.MeshStandardMaterial( { color: "rgba(113, 240, 240, 1)" } );
 function addStar( a ) {
@@ -223,10 +219,11 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let hovered = null;
 window.addEventListener('mousemove', (event) => {
+  
   mouse.x = (event.clientX/window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY/ window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse,camera);
-  const intersects = raycaster.intersectObjects(scene.children, true);
+  const intersects = raycaster.intersectObjects(clickableOjects, true);
 
   if (intersects.length > 0) {
     const target = intersects[0].object;
@@ -236,17 +233,27 @@ window.addEventListener('mousemove', (event) => {
         if (hovered !== null){
           hovered.material.emissive.set(0x000000);
         }
+        
+        if (target.userData?.tags?.includes ( "button" )){
+          console.log("button tagging");
+          if (target.userData?.tags?.includes('button_1')){
+            bRingsRot = 'stop';
+          }
+        }
         hovered = target;
         hovered.material.emissive.set(0x999999);
+
       }
     }else if (hovered !== null){
       hovered.material.emissive.set(0x000000);
       hovered = null;
+      bRingsRot = 'spin';
     }
   }else{
     if (hovered !== null){
       hovered.material.emissive.set(0x000000);
       hovered = null;
+      bRingsRot = 'spin';
     }
   }
 });
@@ -271,8 +278,17 @@ window.addEventListener( 'click', (event) => {
         }else if ( target === box3 ){
           console.log( "box3" );
         }
+      }else if ( target.userData?.tags?.includes ( "button" ) ){
+        console.log(target.userData?.tags);
+        if ( target.userData?.tags?.includes ( "button_1")){
+          console.log("I'm going to kill myself if I go up north")
+
+        }
+        
       }else{
         moveSet(target);
+        console.log("else triggered");
+        console.log(target.userData?.tags);
         scrollCurrentY = target.position.y;
         scrollTargetY = target.position.y; 
       }
@@ -371,12 +387,9 @@ function animate() {
   if (scrollable){
     objTarget.position.y = scrollCurrentY;
   }
-  if (rSmall_1?.rotation && rBig_1?.rotation){
-    rSmall_1.rotation.y += 0.02;
-    rSmall_1.rotation.x += 0.01;
-    rBig_1.rotation.y -= 0.02;
-    rBig_1.rotation.x -= 0.01;
-  };
+
+  func.buttonRingRots(rSmall_b1, rBig_b1, bRingsRot);
+
   torus.rotation.y += 0.01;
   sphere.rotation.y += 0.01;
 

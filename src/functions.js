@@ -23,4 +23,29 @@ export function CameraDirOff(Direction = 'jupiter', offset){
     console.log("CameraDirOff not working");
     return offset;
   }
-}
+};
+
+
+export function buttonRingRots(InnerRing , OuterRing, bRingsRot = 'spin'){
+  const lerpSpeed = .1;
+  if (bRingsRot === 'spin'){
+    if (InnerRing?.rotation && OuterRing?.rotation){
+      InnerRing.rotation.y += 0.02;
+      InnerRing.rotation.x += 0.01;
+      OuterRing.rotation.y -= 0.01;
+      OuterRing.rotation.x -= 0.01;
+    }; 
+  }else if (bRingsRot === 'stop'){
+    if (InnerRing?.rotation && OuterRing?.rotation) {
+      InnerRing.rotation.x *= 0.9;
+      InnerRing.rotation.y *= 0.9;
+      OuterRing.rotation.x *= 0.9;
+      OuterRing.rotation.y *= 0.9;
+    };
+
+  }else{
+    return
+  }
+  
+
+};
