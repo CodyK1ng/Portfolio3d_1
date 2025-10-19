@@ -1,4 +1,4 @@
-
+import * as THREE from 'three';
 
 
 
@@ -27,7 +27,6 @@ export function CameraDirOff(Direction = 'jupiter', offset){
 
 
 export function buttonRingRots(InnerRing , OuterRing, bRingsRot = 'spin'){
-  const lerpSpeed = .1;
   if (bRingsRot === 'spin'){
     if (InnerRing?.rotation && OuterRing?.rotation){
       InnerRing.rotation.y += 0.02;
@@ -38,14 +37,51 @@ export function buttonRingRots(InnerRing , OuterRing, bRingsRot = 'spin'){
   }else if (bRingsRot === 'stop'){
     if (InnerRing?.rotation && OuterRing?.rotation) {
       InnerRing.rotation.x *= 0.9;
-      InnerRing.rotation.y *= 0.9;
+      // InnerRing.rotation.y *= 0.9;
       OuterRing.rotation.x *= 0.9;
-      OuterRing.rotation.y *= 0.9;
+      // OuterRing.rotation.y *= 0.9;
     };
 
   }else{
     return
   }
-  
+};
 
+
+export function addStar( a , scene) {
+  const starGeometry = new THREE.SphereGeometry( 0.25, 24, 24 );
+  const starMaterial = new THREE.MeshStandardMaterial( { color: "rgba(113, 240, 240, 1)" } );
+  const star = new THREE.Mesh( starGeometry , starMaterial );
+
+  const [x,y,z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread( a ) );
+
+  star.position.set(x, y, z);
+  scene.add(star);
+}
+
+
+export function addGeometry(type, colour , x , y , z, size = 1){
+  let geometry;
+  switch (type){
+    case "sphere":
+      geometry = new THREE.SphereGeometry( 4 * size, 40 * size, 40 * size);
+      break;
+    case "box":
+      geometry = new THREE.BoxGeometry( 4 * size, 4 * size, 4 * size);
+      break;
+    case "torus":
+      geometry = new THREE.TorusGeometry( 3 * size, 1 * size, 16 * size, 100);
+      break;
+  };
+  const meshes = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial( {color: colour } )
+  );
+  meshes.position.set( x, y, z );
+  if (type === "box"){
+    meshes.userData.tags = [ "clickable", "box" ];
+  }else{
+    meshes.userData.tags = [ "clickable", "scroll" ];
+  };
+  return meshes;
 };
