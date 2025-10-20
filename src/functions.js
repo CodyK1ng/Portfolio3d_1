@@ -36,9 +36,9 @@ export function buttonRingRots(InnerRing , OuterRing, bRingsRot = 'spin'){
     }; 
   }else if (bRingsRot === 'stop'){
     if (InnerRing?.rotation && OuterRing?.rotation) {
-      InnerRing.rotation.x *= 0.9;
+      InnerRing.rotation.x *= 0.97;
       // InnerRing.rotation.y *= 0.9;
-      OuterRing.rotation.x *= 0.9;
+      OuterRing.rotation.x *= 0.97;
       // OuterRing.rotation.y *= 0.9;
     };
 
@@ -46,6 +46,7 @@ export function buttonRingRots(InnerRing , OuterRing, bRingsRot = 'spin'){
     return
   }
 };
+
 
 
 export function addStar( a , scene) {
@@ -58,7 +59,6 @@ export function addStar( a , scene) {
   star.position.set(x, y, z);
   scene.add(star);
 }
-
 
 export function addGeometry(type, colour , x , y , z, size = 1){
   let geometry;
@@ -84,4 +84,10 @@ export function addGeometry(type, colour , x , y , z, size = 1){
     meshes.userData.tags = [ "clickable", "scroll" ];
   };
   return meshes;
+};
+
+
+export function rotBuildGuards(inner, outer){
+
+
 };

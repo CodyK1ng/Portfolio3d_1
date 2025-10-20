@@ -2,11 +2,14 @@ import './style.css'
 import * as THREE from 'three';
 import { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { textureLoad } from 'three/tsl';
+import { glslFn, textureLoad } from 'three/tsl';
 import * as func from './functions.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { SphereGeometry } from 'three/webgpu';
 
+// X = Left/Right
+// Y = Up/Down 
+// Z = Foward/Backward 
 
 const scene = new THREE.Scene();
 
@@ -17,12 +20,19 @@ const renderer = new THREE.WebGLRenderer({
 });
 
 
-let button_b1, rSmall_b1, rBig_b1; 
+let button_b1, rSmall_b1, rBig_b1, buildFrame, buildGInner, buildGOuter, buildOrb, buildEnergy; 
 let bRingsRot = 'spin';
+let button1Check;
 const modelsToLoad = {
-  button_1: '/Meshes/Button_middle.glb',
-  bRingSmall_1: '/Meshes/Button_sides_1.glb',
-  bRingBig_1: '/Meshes/Button_sides_2.glb',
+  buttonMain_1: '/Meshes/Button_middle.glb',
+  buttonRingSmall_1: '/Meshes/Button_sides_1.glb',
+  buttonRingBig_1: '/Meshes/Button_sides_2.glb',
+
+  buildFrame: '/Meshes/Building_Frame.glb',
+  buildGuardInner: '/Meshes/Building_Guards_Inner.glb',
+  buildGuardOuter: '/Meshes/Building_Guards_Outter.glb',
+  buildOrb: '/Meshes/Building_Orb.glb',
+  buildEnergy: '/Meshes/Building_Energy.glb',
 }
 const loader = new GLTFLoader();
 const loadedModels = {};
@@ -30,25 +40,43 @@ const loadModel = (key, path) => {
   return new Promise ((resolve) => {
     loader.load( path, (gltf) => {
       loadedModels[key] = gltf.scene;
-      loadedModels[key].rotation.set(-5,0,0);
       loadedModels[key].scale.set(1,1,1);
       if (key.includes("button")) {
-        loadedModels[key].position.set(-5, -5,-10);
-        button_b1 = gltf.scene;
-        camera.add(loadedModels[key]);
-        button_b1.traverse((child) =>{
-          if (child.isMesh) {
-            child.userData.tags =  [ "clickable" , "button" , key];
-          }
-        });
-      }
-      if (key.includes("RingSmall")) {
-        rSmall_b1 = gltf.scene;
-        button_b1.add(rSmall_b1);
+        loadedModels[key].rotation.set(-5,0,0);
+        if(key.includes("Main")){
+          loadedModels[key].position.set(-5, -5,-10);
+          button_b1 = gltf.scene;
+          camera.add(loadedModels[key]);
+          button1Check = key;
+          button_b1.traverse((child) =>{
+            if (child.isMesh) {
+              child.userData.tags =  [ "clickable" , "button" , key];
+            }
+          });
+        }else if (key.includes("RingSmall")) {
+          rSmall_b1 = gltf.scene;
+        }else if (key.includes("RingBig")) {
+          rBig_b1 = gltf.scene;
+        };
       };
-      if (key.includes("RingBig")) {
-        rBig_b1 = gltf.scene;
-        button_b1.add(rBig_b1);
+
+      if (key.includes("build")){
+        if (key.includes("Guard")){
+          if (key.includes("Inner")){
+            buildGInner = gltf.scene;
+          }else if (key.includes("Outer")){
+            buildGOuter = gltf.scene;
+          }
+        }else if (key.includes('Orb')){
+          buildOrb = gltf.scene;
+        }else if (key.includes('Frame')){
+          scene.add(loadedModels[key]);
+          buildFrame = gltf.scene;
+          gltf.scene.position.set(0,30,0);
+        }else if (key.includes('Energy')){
+          buildEnergy = gltf.scene;
+        }
+
       };
       resolve(gltf.scene);
     }); 
@@ -58,21 +86,19 @@ const loadModel = (key, path) => {
 const clickableOjects = [];
 Promise.all(Object.entries(modelsToLoad).map(([key, path]) => loadModel(key, path))).then(() => {
   scene.traverse((child=>{
+    // this is for the mouse over array where things that can't be clicked won't get moused over
     if (child.userData?.tags?.includes("clickable")) clickableOjects.push(child);
-
   }));
+  button_b1.add(rBig_b1,rSmall_b1);
+
+  buildFrame.add(buildGInner, buildGOuter, buildOrb, buildEnergy);
 });
 
 
-/* 
-X = Left/Right
-Y = Up/Down 
-Z = Foward/Backward 
-*/
 
 
-camera.position.set( 0, 40 , 100 );
 const cameraHome = new THREE.Object3D();
+camera.position.set( 0, 40 , 100 );
 
 cameraHome.position.copy( camera.position );
 cameraHome.rotation.copy( camera.rotation );
@@ -87,9 +113,8 @@ scene.add(camera);
 
 
 
-/*
-Re-center of rotation hidden box
-*/
+
+// Re-center of rotation hidden box
 const hiddenHomeBox = new THREE.Mesh(
   new THREE.BoxGeometry( 10 , 10 , 10 ),
   new THREE.MeshStandardMaterial({color: "rgba(255, 0, 212, 1)" })
@@ -108,37 +133,33 @@ camera.add(box3);
 
 
 
-/*
-Button locations boxes
-*/
+// Button locations boxes
 const box4 = func.addGeometry("box", "rgba(0, 221, 255, 1)", -50, 30, 0);
 scene.add(box4);
 
 
 
-/*
-Just some random 3d objects
-*/
-const torus = func.addGeometry("torus", "rgb(127, 129, 11)", 0, 0, 0, 4);
-scene.add(torus);
-
-
+// Just some random 3d objects
 const sphere1 = func.addGeometry("sphere", "rgb(230, 22, 227)", 40, 40, 0);
 scene.add(sphere1);
 
 
-// Lights and stuff
-const pointLight = new THREE.PointLight(0xffffff, 10);
-pointLight.position.set( 0, 16, 0 );
-const directionalLight = new THREE.DirectionalLight(0xffffff);
-directionalLight.position.set( 0 , 60 , 0);
-directionalLight.target.position.copy( sphere1.position );
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
 
 
-const lightHelper = new THREE.DirectionalLightHelper(directionalLight)
-scene.add(pointLight, directionalLight, ambientLight);
-scene.add(lightHelper)
+function lights(){
+  const pointLight = new THREE.PointLight(0xffffff, 10);
+  pointLight.position.set( 0, 16, 0 );
+  const directionalLight = new THREE.DirectionalLight(0xffffff);
+  directionalLight.position.set( 0 , 60 , 0);
+  directionalLight.target.position.copy( sphere1.position );
+  const ambientLight = new THREE.AmbientLight(0xffffff, 10);
+
+
+  const lightHelper = new THREE.DirectionalLightHelper(directionalLight)
+  scene.add(pointLight, directionalLight, ambientLight);
+  scene.add(lightHelper)
+};
+lights();
 
 const scrollableObjects = [];
 scene.traverse((object) => {
@@ -172,7 +193,7 @@ window.addEventListener('mousemove', (event) => {
         
         if (target.userData?.tags?.includes ( "button" )){
           console.log("button tagging");
-          if (target.userData?.tags?.includes('button_1')){
+          if (target.userData?.tags?.includes(button1Check)){
             bRingsRot = 'stop';
           }
         }
@@ -316,19 +337,20 @@ function animate() {
         scrollable = false;
       }
     }
-  }
-
+  };
+  if (buildGInner?.rotation && buildGOuter?.rotation){
+    buildGInner.rotation.y += 0.03;
+    buildGOuter.rotation.y -= 0.01;
+  };
 
   scrollTargetY = THREE.MathUtils.clamp(scrollTargetY, -50, 150);
   scrollCurrentY = THREE.MathUtils.lerp(scrollCurrentY, scrollTargetY, 0.1);
+
   if (scrollable){
     objTarget.position.y = scrollCurrentY;
-  }
+  };
 
   func.buttonRingRots(rSmall_b1, rBig_b1, bRingsRot);
-
-  torus.rotation.y += 0.01;
-  sphere1.rotation.y += 0.01;
 
   /*controls.update();*/
 
